@@ -1,7 +1,7 @@
 import Vapor
 import FluentSQLite
 
-final class Acronym {
+final class Acronym: Codable {
     var id: Int?
     var short: String
     var long: String
