@@ -17,12 +17,23 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
     services.register(middlewares)
 
+    let dirConfig = DirectoryConfig.detect()
+    print(dirConfig.workDir) // "/path/to/workdir"
+
+    //let path = FileManager.default.currentDirectoryPath
+
     // Configure a SQLite database
-    let sqlite = try SQLiteDatabase(storage: .memory)
+    //let sqlite = try SQLiteDatabase(storage: .memory)
+
+    let sqlite = try SQLiteDatabase(storage: .file(path: dirConfig.workDir + "acronyms.sqlite"))
 
     /// Register the configured SQLite database to the database config.
     var databases = DatabasesConfig()
     databases.add(database: sqlite, as: .sqlite)
+    if env != .testing {
+        databases.enableLogging(on: .sqlite)
+    }
+
     services.register(databases)
 
     /// Configure migrations
