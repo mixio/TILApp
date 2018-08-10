@@ -92,7 +92,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
     /// Configure migrations
     var migrations = MigrationConfig()
-    //<sqlite>
     switch databaseType {
     case .sqlite:
         migrations.add(model: Acronym.self, database: .sqlite)
