@@ -1,7 +1,8 @@
 import Vapor
-//<sqlite> import FluentSQLite
+//<sqlite>
+import FluentSQLite
 //<mysql> import FluentMySQL
-import FluentPostgreSQL
+//<psql> import FluentPostgreSQL
 
 final class Acronym: Codable {
     var id: Int?
@@ -13,17 +14,22 @@ final class Acronym: Codable {
     }
 }
 
-//<sqlite> /// https://api.vapor.codes/fluent-sqlite/latest/FluentSQLite/Protocols/SQLiteModel.html
-//<sqlite> /// public protocol SQLiteModel : _SQLiteModel where Self.ID == Int
-//<sqlite> /// https://api.vapor.codes/fluent-sqlite/latest/FluentSQLite/Protocols.html#/s:12FluentSQLite01_B5ModelP
-//<sqlite> /// public protocol _SQLiteModel : Model, SQLiteTable where Self.Database == SQLiteDatabase
-//<sqlite> /// https://api.vapor.codes/fluent/latest/Fluent/Protocols/Model.html
-//<sqlite> /// public protocol Model : Reflectable, AnyModel
-//<sqlite> /// A SQLite database model. See Fluent.Model.
-//<sqlite> extension Acronym: SQLiteModel { }
+/*<sqlite>*/
+/// https://api.vapor.codes/fluent-sqlite/latest/FluentSQLite/Protocols/SQLiteModel.html
+/// public protocol SQLiteModel : _SQLiteModel where Self.ID == Int
+/// https://api.vapor.codes/fluent-sqlite/latest/FluentSQLite/Protocols.html#/s:12FluentSQLite01_B5ModelP
+/// public protocol _SQLiteModel : Model, SQLiteTable where Self.Database == SQLiteDatabase
+/// https://api.vapor.codes/fluent/latest/Fluent/Protocols/Model.html
+/// public protocol Model : Reflectable, AnyModel
+/// A SQLite database model. See Fluent.Model.
+extension Acronym: SQLiteModel { }
 
-//<mysql> extension Acronym: MySQLModel { }
-extension Acronym: PostgreSQLModel { }
+/*<mysql>
+ extension Acronym: MySQLModel { }
+ */
+/*<psql>
+ extension Acronym: PostgreSQLModel { }
+ */
 
 /// https://api.vapor.codes/fluent/latest/Fluent/Protocols/Migration.html
 /// public protocol Migration : AnyMigration
@@ -35,3 +41,8 @@ extension Acronym: Migration { }
 /// public protocol Content: Codable, ResponseCodable, RequestCodable
 /// Convertible to / from content in an HTTP message.
 extension Acronym: Content { }
+
+/// https://api.vapor.codes/routing/latest/Routing/Protocols/Parameter.html
+/// public protocol Parameter
+/// A type that is capable of being used as a dynamic route parameter.
+extension Acronym: Parameter { }
