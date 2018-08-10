@@ -1,6 +1,6 @@
 import FluentSQLite
-import FluentMySQL
-import FluentPostgreSQL
+//import FluentMySQL
+//import FluentPostgreSQL
 import Vapor
 
 enum DatabaseType {
@@ -18,9 +18,11 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     case .sqlite:
         try services.register(FluentSQLiteProvider())
     case .mysql:
-        try services.register(FluentMySQLProvider())
+        //try services.register(FluentMySQLProvider())
+        break
     case .psql:
-        try services.register(FluentPostgreSQLProvider())
+        //try services.register(FluentPostgreSQLProvider())
+        break
     }
 
     /// Register routes to the router
@@ -52,24 +54,25 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         let sqlite = try SQLiteDatabase(storage: .file(path: dirConfig.workDir + "acronyms.sqlite"))
         databases.add(database: sqlite, as: .sqlite)
     case .mysql:
-        /// Register the configured MySQL database to the database config.
-        let databaseConfig = MySQLDatabaseConfig(
-            hostname: "localhost",
-            username: "vapor",
-            password: "password",
-            database: "vapor"
-        )
-        let database = MySQLDatabase(config: databaseConfig)
-        databases.add(database: database, as: .mysql)
+//        let databaseConfig = MySQLDatabaseConfig(
+//            hostname: "localhost",
+//            username: "vapor",
+//            password: "password",
+//            database: "vapor"
+//        )
+//        let database = MySQLDatabase(config: databaseConfig)
+//        databases.add(database: database, as: .mysql)
+        break
     case .psql:
-        let databaseConfig = PostgreSQLDatabaseConfig(
-            hostname: hostname,
-            username: username,
-            database: databaseName,
-            password: password
-        )
-        let database = PostgreSQLDatabase(config: databaseConfig)
-        databases.add(database: database, as: .psql)
+//        let databaseConfig = PostgreSQLDatabaseConfig(
+//            hostname: hostname,
+//            username: username,
+//            database: databaseName,
+//            password: password
+//        )
+//        let database = PostgreSQLDatabase(config: databaseConfig)
+//        databases.add(database: database, as: .psql)
+        break
     }
 
     if env != .testing {
@@ -77,9 +80,11 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         case .sqlite:
             databases.enableLogging(on: .sqlite)
         case .mysql:
-            databases.enableLogging(on: .mysql)
+            //databases.enableLogging(on: .mysql)
+            break
         case .psql:
-            databases.enableLogging(on: .psql)
+            //databases.enableLogging(on: .psql)
+            break
         }
     }
 
