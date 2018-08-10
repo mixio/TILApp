@@ -1,10 +1,14 @@
-import FluentSQLite
+//<sqlite> import FluentSQLite
+//<mysql> import FluentMySQL
+import FluentPostgreSQL
 import Vapor
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
     /// Register providers first
-    try services.register(FluentSQLiteProvider())
+    //<sqlite> try services.register(FluentSQLiteProvider())
+    //<mysql> try services.register(FluentMySQLProvider())
+    try services.register(FluentPostgreSQLProvider())
 
     /// Register routes to the router
     let router = EngineRouter.default()
@@ -22,23 +26,52 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
     //let path = FileManager.default.currentDirectoryPath
 
-    // Configure a SQLite database
-    //let sqlite = try SQLiteDatabase(storage: .memory)
+    //<sqlite> Configure a SQLite database
+    //<sqlite> let sqlite = try SQLiteDatabase(storage: .memory)
 
-    let sqlite = try SQLiteDatabase(storage: .file(path: dirConfig.workDir + "acronyms.sqlite"))
-
-    /// Register the configured SQLite database to the database config.
     var databases = DatabasesConfig()
-    databases.add(database: sqlite, as: .sqlite)
+
+    //<sqlite> /// Register the configured SQLite database to the database config.
+    //<sqlite> let sqlite = try SQLiteDatabase(storage: .file(path: dirConfig.workDir + "acronyms.sqlite"))
+    //<sqlite> databases.add(database: sqlite, as: .sqlite)
+
+    //<mysql> /// Register the configured MySQL database to the database config.
+    //<mysql> let databaseConfig = MySQLDatabaseConfig(
+    //<mysql>     hostname: "localhost",
+    //<mysql>     username: "vapor",
+    //<mysql>     password: "password",
+    //<mysql>     database: "vapor"
+    //<mysql> )
+    //<mysql> let database = MySQLDatabase(config: databaseConfig)
+    //<mysql> databases.add(database: database, as: .mysql)
+
+    let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+    let username = Environment.get("DATABASE_USER") ?? "vapor"
+    let databaseName = Environment.get("DATABASE_DB") ?? "vapor"
+    let password = Environment.get("DATABASE_PASSWORD") ?? "password"
+
+    let databaseConfig = PostgreSQLDatabaseConfig(
+        hostname: hostname,
+        username: username,
+        database: databaseName,
+        password: password
+    )
+    let database = PostgreSQLDatabase(config: databaseConfig)
+    databases.add(database: database, as: .psql)
+
     if env != .testing {
-        databases.enableLogging(on: .sqlite)
+        //<sqlite> databases.enableLogging(on: .sqlite)
+        //<mysql> databases.enableLogging(on: .mysql)
+        databases.enableLogging(on: .psql)
     }
 
     services.register(databases)
 
     /// Configure migrations
     var migrations = MigrationConfig()
-    migrations.add(model: Acronym.self, database: .sqlite)
+    //<sqlite> migrations.add(model: Acronym.self, database: .sqlite)
+    //<mysql> migrations.add(model: Acronym.self, database: .mysql)
+    migrations.add(model: Acronym.self, database: .psql)
     services.register(migrations)
 
 }
