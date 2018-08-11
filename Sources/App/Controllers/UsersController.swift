@@ -1,5 +1,5 @@
 //
-//  AcronymsController.swift
+//  UsersController.swift
 //  App
 //
 //  Created by jj on 11/08/2018.
@@ -9,13 +9,12 @@ import Vapor
 import Fluent
 import FluentSQL
 
-struct AcronymsController: RouteCollection, SQLiteBrowsable {
-
-    typealias Record = Acronym
+struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
+    typealias Record = User
     typealias SortKeyType = String
-    let sortKeyPath = \Acronym.short
-    let slug = "acronyms"
-
+    let sortKeyPath = \User.username
+    let slug = "users"
+    
     func boot(router: Router) {
         let routes = router.grouped("api", slug)
         routes.get(use: getRecordsHandler)
@@ -35,11 +34,11 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
 
     func putRecordHandler(_ req: Request) throws -> Future<Record> {
         return try flatMap(to: Record.self,
-            req.parameters.next(Record.self),
-            req.content.decode(Record.self)
+                           req.parameters.next(Record.self),
+                           req.content.decode(Record.self)
         ) { (currentRecord, updatedRecord) -> Future<Record> in
-            currentRecord.short = updatedRecord.short
-            currentRecord.long = updatedRecord.long
+            currentRecord.name = updatedRecord.name
+            currentRecord.username = updatedRecord.username
             return currentRecord.save(on: req)
         }
     }
@@ -48,7 +47,7 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         guard let searchTerm = req.query[String.self, at: "term"] else {
             throw Abort(.badRequest)
         }
-        return Record.query(on: req).filter(\.short == searchTerm).all()
+        return Record.query(on: req).filter(\Record.username == searchTerm).all()
     }
 
     func getFullsearchRecordsHandler(_ req: Request) throws -> Future<[Record]> {
@@ -56,9 +55,9 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
             throw Abort(.badRequest)
         }
         return Record.query(on: req).group(.or) { or in
-            or.filter(\.short == searchTerm)
-            or.filter(\.long ~~ searchTerm)
-        }.all()
+            or.filter(\Record.username == searchTerm)
+            or.filter(\Record.name ~~ searchTerm)
+            }.all()
     }
 
 }
