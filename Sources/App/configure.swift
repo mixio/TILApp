@@ -79,6 +79,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         switch databaseType {
         case .sqlite:
             databases.enableLogging(on: .sqlite)
+            databases.enableReferences(on: .sqlite)
         case .mysql:
             //databases.enableLogging(on: .mysql)
             break
