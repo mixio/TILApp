@@ -94,15 +94,15 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     var migrations = MigrationConfig()
     switch databaseType {
     case .sqlite:
+        migrations.add(model: User.self, database: .sqlite) // Order matters. User has to be before Acronym.
         migrations.add(model: Acronym.self, database: .sqlite)
-        migrations.add(model: User.self, database: .sqlite)
     case .mysql:
-        // migrations.add(model: Acronym.self, database: .mysql)
         // migration.add(model: User.self, database: .mysql)
+        // migrations.add(model: Acronym.self, database: .mysql)
         break
     case .psql:
-        // migrations.add(model: Acronym.self, database: .psql)
         // migration.add(model: User.self, database: .psql)
+        // migrations.add(model: Acronym.self, database: .psql)
         break
     }
     services.register(migrations)

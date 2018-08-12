@@ -8,9 +8,18 @@ final class Acronym: Codable {
     var id: Int?
     var short: String
     var long: String
-    init(short: String, long: String) {
+    var userID: User.ID
+
+    init(short: String, long: String, userID: User.ID) {
         self.short = short
         self.long = long
+        self.userID = userID
+    }
+}
+
+extension Acronym {
+    var user: Parent<Acronym, User> {
+        return parent(\.userID)
     }
 }
 
@@ -31,12 +40,6 @@ extension Acronym: SQLiteModel { }
  extension Acronym: PostgreSQLModel { }
  */
 
-/// https://api.vapor.codes/fluent/latest/Fluent/Protocols/Migration.html
-/// public protocol Migration : AnyMigration
-/// Types conforming to this protocol can be registered with MigrationConfig to
-/// prepare the database before your application runs.
-extension Acronym: Migration { }
-
 /// https://api.vapor.codes/vapor/latest/Vapor/Protocols/Content.html
 /// public protocol Content: Codable, ResponseCodable, RequestCodable
 /// Convertible to / from content in an HTTP message.
@@ -46,3 +49,17 @@ extension Acronym: Content { }
 /// public protocol Parameter
 /// A type that is capable of being used as a dynamic route parameter.
 extension Acronym: Parameter { }
+
+/// https://api.vapor.codes/fluent/latest/Fluent/Protocols/Migration.html
+/// public protocol Migration : AnyMigration
+/// Types conforming to this protocol can be registered with MigrationConfig to
+/// prepare the database before your application runs.
+extension Acronym: Migration {
+    static func prepare(on connection: SQLiteConnection) -> Future<Void> {
+        return Database.create(self, on: connection) { builder in
+            try addProperties(to: builder)
+            builder.reference(from: \.userID, to: \User.id)
+        }
+    }
+}
+

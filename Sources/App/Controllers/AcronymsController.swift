@@ -17,6 +17,7 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
     let slug = "acronyms"
 
     func boot(router: Router) {
+
         let routes = router.grouped("api", slug)
         routes.get(use: getRecordsHandler)
         routes.get(Record.parameter, use: getRecordHandler)
@@ -25,6 +26,7 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         routes.get("first", use: getFirstRecordHandler)
         routes.get("last", use: getLastRecordHandler)
         routes.get("sorted", use: getSortedRecordsHandler)
+        routes.get(Acronym.parameter, "user", use: getUserHandler)
 
         routes.post(Record.self, use: postRecordHandler)
         routes.put(Record.parameter, use: putRecordHandler)
@@ -40,6 +42,7 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         ) { (currentRecord, updatedRecord) -> Future<Record> in
             currentRecord.short = updatedRecord.short
             currentRecord.long = updatedRecord.long
+            currentRecord.userID = updatedRecord.userID
             return currentRecord.save(on: req)
         }
     }
@@ -59,6 +62,12 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
             or.filter(\.short == searchTerm)
             or.filter(\.long ~~ searchTerm)
         }.all()
+    }
+
+    func getUserHandler(_ req: Request) throws -> Future<User> {
+        return try req.parameters.next(Acronym.self).flatMap(to: User.self) { acronym in
+            return acronym.user.get(on: req)
+        }
     }
 
 }

@@ -24,6 +24,7 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
         routes.get("first", use: getFirstRecordHandler)
         routes.get("last", use: getLastRecordHandler)
         routes.get("sorted", use: getSortedRecordsHandler)
+        routes.get(User.parameter, "acronyms", use: getAcronymsHandler)
 
         routes.post(Record.self, use: postRecordHandler)
         routes.put(Record.parameter, use: putRecordHandler)
@@ -60,4 +61,9 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
             }.all()
     }
 
+    func getAcronymsHandler(_ req: Request) throws -> Future<[Acronym]> {
+        return try req.parameters.next(User.self).flatMap(to: [Acronym].self) { user in
+            return try user.acronyms.query(on:req).all()
+        }
+    }
 }
