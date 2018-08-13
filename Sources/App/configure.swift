@@ -97,6 +97,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     case .sqlite:
         migrations.add(model: User.self, database: .sqlite) // Order matters. User has to be before Acronym.
         migrations.add(model: Acronym.self, database: .sqlite)
+        migrations.add(model: Category.self, database: .sqlite)
+        migrations.add(model: AcronymCategoryPivot.self, database: .sqlite)
     case .mysql:
         // migration.add(model: User.self, database: .mysql)
         // migrations.add(model: Acronym.self, database: .mysql)

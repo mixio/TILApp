@@ -1,20 +1,20 @@
 //
-//  UsersController.swift
+//  CategoriesController.swift
 //  App
 //
-//  Created by jj on 11/08/2018.
+//  Created by jj on 12/08/2018.
 //
 
 import Vapor
 import Fluent
 import FluentSQL
 
-struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
-    typealias Record = User
+struct CategoriesController: RouteCollection, SQLiteBrowsable {
+    typealias Record = Category
     typealias SortKeyType = String
-    let sortKeyPath = \User.username
-    let slug = "users"
-    
+    let sortKeyPath = \Category.name
+    let slug = "categories"
+
     func boot(router: Router) {
         let routes = router.grouped("api", slug)
         routes.get(use: getRecordsHandler)
@@ -39,7 +39,6 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
                            req.content.decode(Record.self)
         ) { (currentRecord, updatedRecord) -> Future<Record> in
             currentRecord.name = updatedRecord.name
-            currentRecord.username = updatedRecord.username
             return currentRecord.save(on: req)
         }
     }
@@ -48,7 +47,7 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
         guard let searchTerm = req.query[String.self, at: "term"] else {
             throw Abort(.badRequest)
         }
-        return Record.query(on: req).filter(\Record.username == searchTerm).all()
+        return Record.query(on: req).filter(\Record.name == searchTerm).all()
     }
 
     func getFullsearchRecordsHandler(_ req: Request) throws -> Future<[Record]> {
@@ -56,8 +55,8 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
             throw Abort(.badRequest)
         }
         return Record.query(on: req).group(.or) { or in
-            or.filter(\Record.username == searchTerm)
-            or.filter(\Record.name ~~ searchTerm)
+            or.filter(\Record.name == searchTerm)
+            or.filter(\Record.description ~~ searchTerm)
             }.all()
     }
 
@@ -66,4 +65,5 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
             return try record.acronyms.query(on:req).all()
         }
     }
+
 }

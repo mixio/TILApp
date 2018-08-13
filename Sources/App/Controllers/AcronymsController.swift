@@ -27,11 +27,15 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         routes.get("last", use: getLastRecordHandler)
         routes.get("sorted", use: getSortedRecordsHandler)
         routes.get(Acronym.parameter, "user", use: getUserHandler)
+        routes.get(Acronym.parameter, "categories", use: getCategoriesHandler)
 
         routes.post(Record.self, use: postRecordHandler)
+        routes.post(Record.parameter, "categories", Category.parameter, use: addCategoriesHandler)
+        
         routes.put(Record.parameter, use: putRecordHandler)
 
         routes.delete(Record.parameter, use: deleteRecordHandler)
+        routes.delete(Record.parameter, "categories", Category.parameter, use: deleteRecordCategoriesHandler)
 
     }
 
@@ -68,6 +72,42 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         return try req.parameters.next(Acronym.self).flatMap(to: User.self) { acronym in
             return acronym.user.get(on: req)
         }
+    }
+
+    func addCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        return try flatMap(
+            to: HTTPStatus.self,
+            req.parameters.next(Acronym.self),
+            req.parameters.next(Category.self)
+        ) { acronym, category in
+            return acronym.categories.attach(category, on: req).transform(to: .created)
+        }
+    }
+
+    func getCategoriesHandler(_ req: Request) throws -> Future<[Category]> {
+        return try req.parameters.next(Acronym.self).flatMap(to: [Category].self) { acronym in
+            // Note:
+            // <https://docs.swift.org/swift-book/LanguageGuide/Closures.html>
+            //
+            // Implicit Returns keyword from Single-Expression Closures
+            //
+            // Single expression closures can implicitly return the result of their single expression by
+            // omitting the return keyword from their declaration.
+            // The function type makes the returned type clear, there is no ambiguity, and the
+            // `return` keyword can be omitted.
+            /* return */ try acronym.categories.query(on: req).all()
+        }
+    }
+
+    func deleteRecordCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        return try flatMap(
+            to: HTTPStatus.self,
+            req.parameters.next(Acronym.self),
+            req.parameters.next(Category.self)
+        ) { acronym, category in
+            acronym.categories.detach(category, on: req).transform(to: HTTPStatus.noContent)
+        }
+
     }
 
 }
