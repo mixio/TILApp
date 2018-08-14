@@ -41,31 +41,62 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
     //let path = FileManager.default.currentDirectoryPath
 
-    let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
-    let username = Environment.get("DATABASE_USER") ?? "vapor"
-    let databaseName = Environment.get("DATABASE_DB") ?? "vapor"
-    let password = Environment.get("DATABASE_PASSWORD") ?? "password"
-
     var databases = DatabasesConfig()
 
     switch databaseType {
     case .sqlite:
         // let sqlite = try SQLiteDatabase(storage: .memory)
-        let sqlite = try SQLiteDatabase(storage: .file(path: dirConfig.workDir + "acronyms.sqlite"))
+        let databaseFilepath: String
+        if env == .testing {
+            databaseFilepath = "SQLite/TILApp_test.sqlite"
+        } else {
+            databaseFilepath = "SQLite/TIlApp.sqlite"
+        }
+        let sqlite = try SQLiteDatabase(storage: .file(path: dirConfig.workDir + databaseFilepath))
         databases.add(database: sqlite, as: .sqlite)
     case .mysql:
+//        let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+//        let username = Environment.get("DATABASE_USER") ?? "vapor"
+//        let password = Environment.get("DATABASE_PASSWORD") ?? "password"
+//
+//        let databaseName: String
+//        let databasePort: Int
+//        if env == .testing {
+//            databaseName = "vapor-test"
+//            databasePort = 3306
+//        } else {
+//            databaseName = "vapor"
+//            databasePort = 3307
+//        }
+//
 //        let databaseConfig = MySQLDatabaseConfig(
-//            hostname: "localhost",
-//            username: "vapor",
-//            password: "password",
-//            database: "vapor"
+//            hostname: hostname,
+//            port: databasePort,
+//            username: username,
+//            password: password,
+//            database: databaseName
 //        )
 //        let database = MySQLDatabase(config: databaseConfig)
 //        databases.add(database: database, as: .mysql)
         break
     case .psql:
+//        let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+//        let username = Environment.get("DATABASE_USER") ?? "vapor"
+//        let password = Environment.get("DATABASE_PASSWORD") ?? "password"
+//
+//        let databaseName: String
+//        let databasePort: Int
+//        if env == .testing {
+//            databaseName = "vapor-test"
+//            databasePort = 5433
+//        } else {
+//            databaseName = "vapor"
+//            databasePort = 5432
+//        }
+//
 //        let databaseConfig = PostgreSQLDatabaseConfig(
 //            hostname: hostname,
+//            port: databasePort,
 //            username: username,
 //            database: databaseName,
 //            password: password
@@ -75,18 +106,16 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         break
     }
 
-    if env != .testing {
-        switch databaseType {
-        case .sqlite:
-            databases.enableLogging(on: .sqlite)
-            databases.enableReferences(on: .sqlite)
-        case .mysql:
-            //databases.enableLogging(on: .mysql)
-            break
-        case .psql:
-            //databases.enableLogging(on: .psql)
-            break
-        }
+    switch databaseType {
+    case .sqlite:
+        databases.enableLogging(on: .sqlite)
+        databases.enableReferences(on: .sqlite)
+    case .mysql:
+        //databases.enableLogging(on: .mysql)
+        break
+    case .psql:
+        //databases.enableLogging(on: .psql)
+        break
     }
 
     services.register(databases)
@@ -99,6 +128,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         migrations.add(model: Acronym.self, database: .sqlite)
         migrations.add(model: Category.self, database: .sqlite)
         migrations.add(model: AcronymCategoryPivot.self, database: .sqlite)
+        migrations.add(model: Post.self, database: .sqlite)
+        migrations.add(model: PostResponse.self, database: .sqlite)
     case .mysql:
         // migration.add(model: User.self, database: .mysql)
         // migrations.add(model: Acronym.self, database: .mysql)
@@ -110,4 +141,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     }
     services.register(migrations)
 
+    // Commands.
+    var commandConfig = CommandConfig.default()
+    commandConfig.useFluentCommands()
+    services.register(commandConfig)
 }

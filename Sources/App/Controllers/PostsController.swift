@@ -1,20 +1,21 @@
 //
-//  UsersController.swift
+//  PostsController.swift
 //  App
 //
-//  Created by jj on 11/08/2018.
+//  Created by jj on 13/08/2018.
 //
 
 import Vapor
 import Fluent
 import FluentSQL
 
-struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
-    typealias Record = User
+struct PostsController: RouteCollection, SQLiteBrowsable {
+
+    typealias Record = Post
     typealias SortKeyType = String
-    let sortKeyPath = \User.username
-    let slug = "users"
-    
+    let sortKeyPath = \Record.title
+    let slug = "posts"
+
     func boot(router: Router) {
         let routes = router.grouped("api", slug)
         routes.get(use: getRecordsHandler)
@@ -24,8 +25,7 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
         routes.get("first", use: getFirstRecordHandler)
         routes.get("last", use: getLastRecordHandler)
         routes.get("sorted", use: getSortedRecordsHandler)
-        routes.get(Record.parameter, "acronyms", use: geRecordAcronymsHandler)
-        routes.get(Record.parameter, "posts", use: geRecordPostsHandler)
+        routes.get(Record.parameter, "postResponses", use: geRecordPostResponsesHandler)
 
         routes.post(Record.self, use: postRecordHandler)
         routes.put(Record.parameter, use: putRecordHandler)
@@ -39,8 +39,7 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
                            req.parameters.next(Record.self),
                            req.content.decode(Record.self)
         ) { (currentRecord, updatedRecord) -> Future<Record> in
-            currentRecord.name = updatedRecord.name
-            currentRecord.username = updatedRecord.username
+            currentRecord.title = updatedRecord.title
             return currentRecord.save(on: req)
         }
     }
@@ -49,7 +48,7 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
         guard let searchTerm = req.query[String.self, at: "term"] else {
             throw Abort(.badRequest)
         }
-        return Record.query(on: req).filter(\Record.username == searchTerm).all()
+        return Record.query(on: req).filter(\Record.title == searchTerm).all()
     }
 
     func getFullsearchRecordsHandler(_ req: Request) throws -> Future<[Record]> {
@@ -57,20 +56,15 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
             throw Abort(.badRequest)
         }
         return Record.query(on: req).group(.or) { or in
-            or.filter(\Record.username == searchTerm)
-            or.filter(\Record.name ~~ searchTerm)
+            or.filter(\Record.title == searchTerm)
+            or.filter(\Record.content ~~ searchTerm)
             }.all()
     }
 
-    func geRecordAcronymsHandler(_ req: Request) throws -> Future<[Acronym]> {
-        return try req.parameters.next(Record.self).flatMap(to: [Acronym].self) { record in
-            return try record.acronyms.query(on:req).all()
+    func geRecordPostResponsesHandler(_ req: Request) throws -> Future<[PostResponse]> {
+        return try req.parameters.next(Record.self).flatMap(to: [PostResponse].self) { record in
+            return try record.postResponses.query(on:req).all()
         }
     }
 
-    func geRecordPostsHandler(_ req: Request) throws -> Future<[Post]> {
-        return try req.parameters.next(Record.self).flatMap(to: [Post].self) { record in
-            return try record.posts.query(on:req).all()
-        }
-    }
 }

@@ -14,4 +14,10 @@ public func routes(_ router: Router) throws {
     let categoriesController = CategoriesController()
     try router.register(collection: categoriesController)
 
+    let postsController = PostsController()
+    try router.register(collection: postsController)
+
+    let postResponsesController = PostResponsesController()
+    try router.register(collection: postResponsesController)
+
 }

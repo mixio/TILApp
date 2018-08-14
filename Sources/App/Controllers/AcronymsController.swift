@@ -37,6 +37,8 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         routes.delete(Record.parameter, use: deleteRecordHandler)
         routes.delete(Record.parameter, "categories", Category.parameter, use: deleteRecordCategoriesHandler)
 
+        routes.patch(Int.parameter, use: patchLongPropertyHandler)
+
     }
 
     func putRecordHandler(_ req: Request) throws -> Future<Record> {
@@ -107,7 +109,23 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         ) { acronym, category in
             acronym.categories.detach(category, on: req).transform(to: HTTPStatus.noContent)
         }
+    }
 
+    func patchLongPropertyHandler(_ req: Request) throws -> Future<Acronym> {
+        let id = try req.parameters.next(Int.self)
+        struct Submitted: Codable {
+            var long: String
+        }
+        return try req.content.decode(Submitted.self).flatMap(to: Acronym.self) { submitted in
+            let binds: [Encodable] = [submitted.long, id]
+            let sql = "UPDATE `Acronym` SET `long`=? WHERE `id`=?;"
+            return req.withPooledConnection(to: .sqlite) { conn in
+                return conn.raw(sql).binds(binds).all(decoding: Acronym.self)
+            }.flatMap(to: Acronym.self) { rows in
+                return Acronym.find(id, on: req).unwrap(or: Abort(.notFound))
+            }
+        }
     }
 
 }
+

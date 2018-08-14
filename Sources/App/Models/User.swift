@@ -33,3 +33,11 @@ extension User {
         return children(\.userID)
     }
 }
+
+
+extension User {
+    var posts: Children<User, Post> {
+        return children(\.userID)
+    }
+}
+
