@@ -3,6 +3,7 @@ import FluentSQLite
 //import FluentPostgreSQL
 import Vapor
 import Leaf
+import JJTools
 
 enum DatabaseType {
     case sqlite
@@ -38,7 +39,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(middlewares)
 
     let dirConfig = DirectoryConfig.detect()
-    print(dirConfig.workDir)                // "/path/to/workdir"
 
     //let path = FileManager.default.currentDirectoryPath
 
@@ -49,11 +49,13 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         // let sqlite = try SQLiteDatabase(storage: .memory)
         let databaseFilepath: String
         if env == .testing {
-            databaseFilepath = "SQLite/TILApp_test.sqlite"
+            databaseFilepath = dirConfig.workDir + "SQLite/TILApp_test.sqlite"
         } else {
-            databaseFilepath = "SQLite/TIlApp.sqlite"
+            databaseFilepath = dirConfig.workDir + "SQLite/TIlApp.sqlite"
         }
-        let sqlite = try SQLiteDatabase(storage: .file(path: dirConfig.workDir + databaseFilepath))
+        jjprint(databaseFilepath)                // "/path/to/workdir/SQLite/databasefilename.sqlite"
+
+        let sqlite = try SQLiteDatabase(storage: .file(path: databaseFilepath))
         databases.add(database: sqlite, as: .sqlite)
     case .mysql:
 //        let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
