@@ -10,7 +10,7 @@ import Vapor
 //import  FluentPostgreSQL
 import FluentSQLite
 
-final class PostResponse {
+final class PostResponse: Codable {
     var id: Int?
     var title: String
     var content: String
