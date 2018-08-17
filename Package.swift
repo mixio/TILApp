@@ -10,7 +10,7 @@ let package = Package(
         // 🔵 Swift ORM (queries, models, relations, etc) built on SQLite 3.
         .package(url: "https://github.com/vapor/fluent-sqlite.git", from: "3.0.0"),
 
-        .package(url: "https://github.com/mixio/jjtools.git", from: "0.0.6"),
+        .package(url: "https://github.com/mixio/jjtools.git", from: "0.0.7"),
 
         .package(url: "https://github.com/vapor/leaf.git", from: "3.0.0"),
 
