@@ -14,13 +14,18 @@ struct WebsiteController: RouteCollection {
         router.get(use: getAcronymsHandler)
         router.get("acronyms", Acronym.parameter, use: getAcronymHandler)
         router.get("acronyms", "create", use: getCreateAcronymFormHandler)
+        router.get("acronyms", Acronym.parameter, "edit", use: getEditAcronymFormHandler)
         router.get("users", use: getUsersHandler)
         router.get("users", User.parameter, use: getUserHandler)
         router.get("categories", use: getCategoriesHandler)
         router.get("categories", Category.parameter, use: getCategoryHandler)
 
         router.post(Acronym.self, at: "acronyms", "create", use: postCreateAcronymFormHandler)
+        router.post("acronyms", Acronym.parameter, "edit", use: postEditAcronymFormHandler)
+        router.post("acronyms", Acronym.parameter, "delete", use: deleteAcronymHandler)
     }
+
+    // MARK: - Acronym
 
     func getAcronymsHandler(_ req: Request) throws -> Future<View> {
         jjprint("getAcronymsHandler")
@@ -54,7 +59,7 @@ struct WebsiteController: RouteCollection {
             let users: Future<[User]>
         }
         let context = Context(users: User.query(on: req).all())
-        return try req.view().render("createAcronym", context)
+        return try req.view().render("acronymForm", context)
     }
 
     func postCreateAcronymFormHandler(_ req: Request, acronym: Acronym) throws -> Future<Response> {
@@ -66,6 +71,43 @@ struct WebsiteController: RouteCollection {
         }
     }
 
+    func getEditAcronymFormHandler(_ req: Request) throws -> Future<View> {
+        struct Context: Encodable {
+            let title = "Edit An Acronym"
+            let acronym: Acronym
+            let users: Future<[User]>
+            let editing = true
+        }
+
+        return try req.parameters.next(Acronym.self).flatMap(to: View.self) { acronym in
+            let context = Context(acronym: acronym, users: User.query(on: req).all())
+            return try req.view().render("acronymForm", context)
+        }
+    }
+
+    func postEditAcronymFormHandler(_ req: Request) throws -> Future<Response> {
+        return try flatMap(
+            to: Response.self,
+            req.parameters.next(Acronym.self),
+            req.content.decode(Acronym.self)
+        ) { acronym, data in
+            acronym.short = data.short
+            acronym.long = data.long
+            acronym.userID = data.userID
+            return acronym.save(on: req).map(to: Response.self) { savedAcronym in
+                guard let id = savedAcronym.id else {
+                    throw Abort(.internalServerError)
+                }
+                return req.redirect(to: "/acronyms/\(id)")
+            }
+        }
+    }
+
+    func deleteAcronymHandler(_ req: Request) throws -> Future<Response> {
+        return try req.parameters.next(Acronym.self).delete(on: req).transform(to: req.redirect(to: "/"))
+    }
+
+    // MARK: - User
     func getUsersHandler(_ req: Request) throws -> Future<View> {
         return User.query(on: req).all().flatMap(to: View.self) { users in
             struct Context: Encodable {
@@ -91,6 +133,7 @@ struct WebsiteController: RouteCollection {
         }
     }
 
+    // MARK: - Category
     func getCategoriesHandler(_ req: Request) throws -> Future<View> {
         struct Context: Encodable {
             let title: String
