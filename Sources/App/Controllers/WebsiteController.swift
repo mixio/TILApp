@@ -15,6 +15,8 @@ struct WebsiteController: RouteCollection {
         router.get("acronyms", Acronym.parameter, use: getAcronymHandler)
         router.get("users", use: getUsersHandler)
         router.get("users", User.parameter, use: getUserHandler)
+        router.get("categories", use: getCategoriesHandler)
+        router.get("categories", Category.parameter, use: getCategoryHandler)
     }
 
     func getAcronymsHandler(_ req: Request) throws -> Future<View> {
@@ -64,6 +66,29 @@ struct WebsiteController: RouteCollection {
                 let context = UserContext(title: user.name, acronyms: acronyms.isEmpty ? nil : acronyms, user: user)
                 return try req.view().render("user", context)
             }
+        }
+    }
+
+    func getCategoriesHandler(_ req: Request) throws -> Future<View> {
+        struct CategoriesContext: Encodable {
+            let title: String
+            let categories: Future<[Category]>
+        }
+        let categories = Category.query(on: req).all() // Leaf knows how to handle futures.
+        let context = CategoriesContext(title: "Categories", categories: categories)
+        return try req.view().render("categories", context)
+    }
+
+    func getCategoryHandler(_ req: Request) throws -> Future<View> {
+        return try req.parameters.next(Category.self).flatMap(to: View.self) { category in
+            struct CategoryContext: Encodable {
+                let title: String
+                let category: Category
+                let acronyms: Future<[Acronym]>
+            }
+            let acronyms =  try category.acronyms.query(on: req).all()
+            let context = CategoryContext(title: category.name, category: category, acronyms: acronyms)
+            return try req.view().render("category", context)
         }
     }
 
