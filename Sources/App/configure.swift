@@ -32,6 +32,11 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     try routes(router)
     services.register(router, as: Router.self)
 
+    // Commands.
+//    var commandConfig = CommandConfig.default()
+//    commandConfig.useFluentCommands()
+//    services.register(commandConfig)
+
     /// Register middleware
     var middlewares = MiddlewareConfig()    // Create _empty_ middleware config
     middlewares.use(FileMiddleware.self)    // Serves files from `Public/` directory
@@ -143,11 +148,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         break
     }
     services.register(migrations)
-
-    // Commands.
-    var commandConfig = CommandConfig.default()
-    commandConfig.useFluentCommands()
-    services.register(commandConfig)
 
     // Leaf.
     try services.register(LeafProvider())
