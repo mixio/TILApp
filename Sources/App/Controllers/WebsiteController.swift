@@ -4,7 +4,7 @@
 //
 //  Created by jj on 16/08/2018.
 //
-
+import JJTools
 import Foundation
 import Vapor
 import Leaf
@@ -20,6 +20,7 @@ struct WebsiteController: RouteCollection {
     }
 
     func getAcronymsHandler(_ req: Request) throws -> Future<View> {
+        jjprint("getAcronymsHandler")
         return Acronym.query(on: req).all().flatMap(to: View.self) { acronyms in
             struct acronymsContext: Encodable {
                 let title: String
