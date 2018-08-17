@@ -2,6 +2,7 @@ import FluentSQLite
 //import FluentMySQL
 //import FluentPostgreSQL
 import Vapor
+import Leaf
 
 enum DatabaseType {
     case sqlite
@@ -31,13 +32,13 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(router, as: Router.self)
 
     /// Register middleware
-    var middlewares = MiddlewareConfig() // Create _empty_ middleware config
-    /// middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
-    middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
+    var middlewares = MiddlewareConfig()    // Create _empty_ middleware config
+    middlewares.use(FileMiddleware.self)    // Serves files from `Public/` directory
+    middlewares.use(ErrorMiddleware.self)   // Catches errors and converts to HTTP response
     services.register(middlewares)
 
     let dirConfig = DirectoryConfig.detect()
-    print(dirConfig.workDir) // "/path/to/workdir"
+    print(dirConfig.workDir)                // "/path/to/workdir"
 
     //let path = FileManager.default.currentDirectoryPath
 
@@ -145,4 +146,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     var commandConfig = CommandConfig.default()
     commandConfig.useFluentCommands()
     services.register(commandConfig)
+
+    // Leaf.
+    try services.register(LeafProvider())
+    config.prefer(LeafRenderer.self, for: ViewRenderer.self)
 }
