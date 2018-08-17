@@ -13,11 +13,13 @@ struct WebsiteController: RouteCollection {
     func boot(router: Router) throws {
         router.get(use: getAcronymsHandler)
         router.get("acronyms", Acronym.parameter, use: getAcronymHandler)
-        router.get("acronyms", "ne", use: getCreateAcronymFormHandler)
+        router.get("acronyms", "create", use: getCreateAcronymFormHandler)
         router.get("users", use: getUsersHandler)
         router.get("users", User.parameter, use: getUserHandler)
         router.get("categories", use: getCategoriesHandler)
         router.get("categories", Category.parameter, use: getCategoryHandler)
+
+        router.post(Acronym.self, at: "acronyms", "create", use: postCreateAcronymFormHandler)
     }
 
     func getAcronymsHandler(_ req: Request) throws -> Future<View> {
@@ -53,6 +55,15 @@ struct WebsiteController: RouteCollection {
         }
         let context = Context(users: User.query(on: req).all())
         return try req.view().render("createAcronym", context)
+    }
+
+    func postCreateAcronymFormHandler(_ req: Request, acronym: Acronym) throws -> Future<Response> {
+        return acronym.save(on: req).map(to: Response.self) { acronym in
+            guard let id = acronym.id else {
+                throw Abort(.internalServerError)
+            }
+            return req.redirect(to: "/acronyms/\(id)")
+        }
     }
 
     func getUsersHandler(_ req: Request) throws -> Future<View> {
