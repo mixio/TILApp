@@ -8,17 +8,20 @@
 import Vapor
 import Fluent
 import FluentSQL
+import Crypto
 
 struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
+
     typealias Record = User
+    typealias PublicRecord = Record.Public
     typealias SortKeyType = String
     let sortKeyPath = \User.username
     let slug = "users"
     
     func boot(router: Router) {
         let routes = router.grouped("api", slug)
-        routes.get(use: getRecordsHandler)
-        routes.get(Record.parameter, use: getRecordHandler)
+        routes.get(use: getPublicRecordsHandler)
+        routes.get(Record.parameter, use: getPublicRecordHandler)
         routes.get("search", use: getSearchRecordsHandler)
         routes.get("fullsearch", use: getFullsearchRecordsHandler)
         routes.get("first", use: getFirstRecordHandler)
@@ -27,11 +30,25 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
         routes.get(Record.parameter, "acronyms", use: geRecordAcronymsHandler)
         routes.get(Record.parameter, "posts", use: geRecordPostsHandler)
 
-        routes.post(Record.self, use: postRecordHandler)
+        routes.post(Record.self, use: postPublicRecordHandler)
+        routes.post("reset", "passwords", use: postResetPasswordsHandler)
         routes.put(Record.parameter, use: putRecordHandler)
 
         routes.delete(Record.parameter, use: deleteRecordHandler)
 
+    }
+
+    func getPublicRecordsHandler(_ req: Request) throws -> Future<[PublicRecord]> {
+        return Record.query(on: req).decode(data: PublicRecord.self).all()
+    }
+
+    func getPublicRecordHandler(_ req: Request) throws -> Future<PublicRecord> {
+        return try req.parameters.next(Record.self).convertToPublic()
+    }
+
+    func postPublicRecordHandler(_ req: Request, record: Record) throws -> Future<PublicRecord> {
+        record.password = try BCrypt.hash(record.password)
+        return record.save(on: req).convertToPublic()
     }
 
     func putRecordHandler(_ req: Request) throws -> Future<Record> {
@@ -73,4 +90,17 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
             return try record.posts.query(on:req).all()
         }
     }
+
+    func postResetPasswordsHandler(_ req: Request) throws -> Future<Response> {
+        return User.query(on: req).all().flatMap(to: Response.self) { users in
+            var results: [Future<User>] = []
+            for user in users {
+                user.password = try BCrypt.hash(user.username)
+                results.append(user.save(on: req))
+            }
+            let redirect = req.redirect(to: "/api/users")
+            return results.flatten(on: req).transform(to: redirect)
+        }
+    }
+    
 }

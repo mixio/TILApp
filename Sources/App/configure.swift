@@ -33,9 +33,9 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(router, as: Router.self)
 
     // Commands.
-//    var commandConfig = CommandConfig.default()
-//    commandConfig.useFluentCommands()
-//    services.register(commandConfig)
+    var commandConfig = CommandConfig.default()
+    commandConfig.useFluentCommands()
+    services.register(commandConfig)
 
     /// Register middleware
     var middlewares = MiddlewareConfig()    // Create _empty_ middleware config

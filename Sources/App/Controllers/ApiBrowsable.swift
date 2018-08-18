@@ -7,6 +7,7 @@
 import Vapor
 import Fluent
 import FluentSQLite
+import Crypto
 
 protocol _ApiBrowsable {
     associatedtype Record: Parameter, Content
