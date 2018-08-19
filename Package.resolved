@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "Auth",
+        "repositoryURL": "https://github.com/vapor/auth.git",
+        "state": {
+          "branch": null,
+          "revision": "90868627c7587ea207c0b6d4054265e68f6a33ef",
+          "version": "2.0.1"
+        }
+      },
+      {
         "package": "Console",
         "repositoryURL": "https://github.com/vapor/console.git",
         "state": {
@@ -69,8 +78,8 @@
         "repositoryURL": "https://github.com/mixio/jjtools.git",
         "state": {
           "branch": null,
-          "revision": "1d02980e7292d76882566124baf308d9f13c0cfd",
-          "version": "0.0.8"
+          "revision": "f01891f48b45e4466f11799c29bd9ade2ec3ce5b",
+          "version": "0.0.9"
         }
       },
       {

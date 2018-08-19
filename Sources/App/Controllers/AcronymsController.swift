@@ -8,6 +8,7 @@
 import Vapor
 import Fluent
 import FluentSQL
+import Authentication
 
 struct AcronymsController: RouteCollection, SQLiteBrowsable {
 
@@ -19,6 +20,7 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
     func boot(router: Router) {
 
         let routes = router.grouped("api", slug)
+
         routes.get(use: getRecordsHandler)
         routes.get(Record.parameter, use: getRecordHandler)
         routes.get("search", use: getSearchRecordsHandler)
@@ -29,26 +31,32 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
         routes.get(Acronym.parameter, "user", use: getUserHandler)
         routes.get(Acronym.parameter, "categories", use: getCategoriesHandler)
 
-        routes.post(Record.self, use: postRecordHandler)
-        routes.post(Record.parameter, "categories", Category.parameter, use: addCategoriesHandler)
+
+        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        let protectedRoutes = routes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         
-        routes.put(Record.parameter, use: putRecordHandler)
+        protectedRoutes.post(AcronymCreateData.self, use: postRecordHandler)
+        protectedRoutes.post(Record.parameter, "categories", Category.parameter, use: addCategoriesHandler)
 
-        routes.delete(Record.parameter, use: deleteRecordHandler)
-        routes.delete(Record.parameter, "categories", Category.parameter, use: deleteRecordCategoriesHandler)
+        protectedRoutes.put(Record.parameter, use: putRecordHandler)
 
-        routes.patch(Int.parameter, use: patchLongPropertyHandler)
+        protectedRoutes.delete(Record.parameter, use: deleteRecordHandler)
+        protectedRoutes.delete(Record.parameter, "categories", Category.parameter, use: deleteRecordCategoriesHandler)
+
+        protectedRoutes.patch(Int.parameter, use: patchLongPropertyHandler)
 
     }
 
     func putRecordHandler(_ req: Request) throws -> Future<Record> {
         return try flatMap(to: Record.self,
             req.parameters.next(Record.self),
-            req.content.decode(Record.self)
+            req.content.decode(AcronymCreateData.self)
         ) { (currentRecord, updatedRecord) -> Future<Record> in
             currentRecord.short = updatedRecord.short
             currentRecord.long = updatedRecord.long
-            currentRecord.userID = updatedRecord.userID
+            let user = try req.requireAuthenticated(User.self)
+            currentRecord.userID = try user.requireID()
             return currentRecord.save(on: req)
         }
     }
@@ -125,6 +133,17 @@ struct AcronymsController: RouteCollection, SQLiteBrowsable {
                 return Acronym.find(id, on: req).unwrap(or: Abort(.notFound))
             }
         }
+    }
+
+    struct AcronymCreateData: Content {
+        let short: String
+        let long: String
+    }
+
+    func postRecordHandler(_ req: Request, data: AcronymCreateData) throws -> Future<Record> {
+        let user = try req.requireAuthenticated(User.self)
+        let record = try Acronym(short: data.short, long: data.long, userID: user.requireID())
+        return record.save(on: req)
     }
 
 }

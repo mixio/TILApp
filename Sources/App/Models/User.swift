@@ -8,6 +8,7 @@
 import Foundation
 import Vapor
 import FluentSQLite
+import Authentication
 
 final class User: Codable {
     var id: UUID?
@@ -51,6 +52,14 @@ extension User: Parameter { }
 /// encoding/decoding from http messages.
 extension User: Content { }
 
+extension User: BasicAuthenticatable {
+    static let usernameKey: UsernameKey = \User.username
+    static let passwordKey: PasswordKey = \User.password
+}
+
+extension User: TokenAuthenticatable {
+    typealias TokenType = Token
+}
 
 // MARK: - Public
 
@@ -85,3 +94,21 @@ extension Future where T: User {
     
 }
 
+// MARK - Admin user
+
+struct AdminUser: Migration {
+    typealias Database = SQLiteDatabase
+
+    static func prepare(on connection: SQLiteConnection) -> Future<Void> {
+        let password = try? BCrypt.hash("password")
+        guard let hashedPassword = password else {
+            fatalError("Failed to create admin user")
+        }
+        let user = User(name: "Admin", username: "admin", password: hashedPassword)
+        return user.save(on: connection).transform(to: ())
+    }
+
+    static func revert(on connection: SQLiteConnection) -> Future<Void> {
+        return .done(on: connection)
+    }
+}

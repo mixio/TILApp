@@ -20,6 +20,7 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
     
     func boot(router: Router) {
         let routes = router.grouped("api", slug)
+
         routes.get(use: getPublicRecordsHandler)
         routes.get(Record.parameter, use: getPublicRecordHandler)
         routes.get("search", use: getSearchRecordsHandler)
@@ -30,12 +31,26 @@ struct UsersController: RouteCollection, SQLiteUUIDBrowsable {
         routes.get(Record.parameter, "acronyms", use: geRecordAcronymsHandler)
         routes.get(Record.parameter, "posts", use: geRecordPostsHandler)
 
-        routes.post(Record.self, use: postPublicRecordHandler)
-        routes.post("reset", "passwords", use: postResetPasswordsHandler)
-        routes.put(Record.parameter, use: putRecordHandler)
+        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
+        let loginRoutes = routes.grouped(basicAuthMiddleware)
+        loginRoutes.post("login", use: postLoginHandler)
 
-        routes.delete(Record.parameter, use: deleteRecordHandler)
+        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        let protectedRoutes = routes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
 
+        protectedRoutes.post(Record.self, use: postRecordHandler)
+        protectedRoutes.post("reset", "passwords", use: postResetPasswordsHandler)
+
+        protectedRoutes.put(Record.parameter, use: putRecordHandler)
+
+        protectedRoutes.delete(Record.parameter, use: deleteRecordHandler)
+    }
+
+    func postLoginHandler(_ req: Request) throws -> Future<Token> {
+        let user = try req.requireAuthenticated(User.self)
+        let token = try Token.generate(for: user)
+        return token.save(on: req)
     }
 
     func getPublicRecordsHandler(_ req: Request) throws -> Future<[PublicRecord]> {

@@ -4,6 +4,7 @@ import FluentSQLite
 import Vapor
 import Leaf
 import JJTools
+import Authentication
 
 enum DatabaseType {
     case sqlite
@@ -138,6 +139,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         migrations.add(model: AcronymCategoryPivot.self, database: .sqlite)
         migrations.add(model: Post.self, database: .sqlite)
         migrations.add(model: PostResponse.self, database: .sqlite)
+        migrations.add(model: Token.self, database: .sqlite)
+        migrations.add(migration: AdminUser.self, database: .sqlite)
     case .mysql:
         // migration.add(model: User.self, database: .mysql)
         // migrations.add(model: Acronym.self, database: .mysql)
@@ -152,4 +155,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     // Leaf.
     try services.register(LeafProvider())
     config.prefer(LeafRenderer.self, for: ViewRenderer.self)
+
+    // Authentication.
+    try services.register(AuthenticationProvider())
 }

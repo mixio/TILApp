@@ -26,10 +26,14 @@ struct CategoriesController: RouteCollection, SQLiteBrowsable {
         routes.get("sorted", use: getSortedRecordsHandler)
         routes.get(Record.parameter, "acronyms", use: geRecordAcronymsHandler)
 
-        routes.post(Record.self, use: postRecordHandler)
-        routes.put(Record.parameter, use: putRecordHandler)
+        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        let protectedRoutes = routes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
 
-        routes.delete(Record.parameter, use: deleteRecordHandler)
+        protectedRoutes.post(Record.self, use: postRecordHandler)
+        protectedRoutes.put(Record.parameter, use: putRecordHandler)
+
+        protectedRoutes.delete(Record.parameter, use: deleteRecordHandler)
 
     }
 
