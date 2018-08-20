@@ -1,13 +1,17 @@
 @testable import App
 import FluentSQLite
+import Crypto
 
 extension User {
-    static func create(
-        name: String = "Luke",
-        username: String = "luke",
-        on connection: SQLiteConnection
-        ) throws -> User {
-        let user = User(name: name, username: username)
+    static func create(name: String = "Luke", username: String? = nil, on connection: SQLiteConnection) throws -> User {
+        var createdUsername: String
+        if let suppliedUsername = username {
+            createdUsername = suppliedUsername
+        } else {
+            createdUsername = UUID().uuidString
+        }
+        let password = try BCrypt.hash("password")
+        let user = User(name: name, username: createdUsername, password: password)
         return try user.save(on: connection).wait()
     }
 }

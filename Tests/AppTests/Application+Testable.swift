@@ -1,6 +1,7 @@
 import Vapor
-import App
+@testable import App
 import FluentSQLite
+import Authentication
 
 extension Application {
     static func testable(envArgs: [String]? = nil) throws -> Application {
@@ -32,8 +33,30 @@ extension Application {
         to path: String,
         method: HTTPMethod,
         headers: HTTPHeaders = .init(),
-        body: T? = nil
-        ) throws -> Response where T: Content {
+        body: T? = nil,
+        loggedInRequest: Bool = false,
+        loggedInUser: User? = nil
+    ) throws -> Response where T: Content {
+        var headers = headers
+        if (loggedInRequest || loggedInUser != nil) {
+            let username: String
+            if let user = loggedInUser {
+                username = user.username
+            } else {
+                username = "admin"
+            }
+            let credentials = BasicAuthorization(username: username, password: "password")
+            var tokenHeaders = HTTPHeaders()
+            tokenHeaders.basicAuthorization = credentials
+            let tokenResponse = try self.sendRequest(
+                to: "/api/users/login",
+                method: .POST,
+                headers: tokenHeaders
+            )
+            let token = try tokenResponse.content.syncDecode(Token.self)
+            headers.add(name: .authorization, value: "Bearer \(token.token)")
+        }
+
         let responder = try self.make(Responder.self)
         let request = HTTPRequest(
             method: method,
@@ -50,14 +73,18 @@ extension Application {
     func sendRequest(
         to path: String,
         method: HTTPMethod,
-        headers: HTTPHeaders = .init()
-        ) throws -> Response {
+        headers: HTTPHeaders = .init(),
+        loggedInRequest: Bool = false,
+        loggedInUser: User? = nil
+    ) throws -> Response {
         let emptyContent: EmptyContent? = nil
         return try sendRequest(
             to: path,
             method: method,
             headers: headers,
-            body: emptyContent
+            body: emptyContent,
+            loggedInRequest: loggedInRequest,
+            loggedInUser: loggedInUser
         )
     }
 
@@ -65,13 +92,17 @@ extension Application {
         to path: String,
         method: HTTPMethod,
         headers: HTTPHeaders,
-        data: T
-        ) throws where T: Content {
+        data: T,
+        loggedInRequest: Bool = false,
+        loggedInUser: User? = nil
+    ) throws where T: Content {
         _ = try self.sendRequest(
             to: path,
             method: method,
             headers: headers,
-            body: data
+            body: data,
+            loggedInRequest: loggedInRequest,
+            loggedInUser: loggedInUser
         )
     }
 
@@ -80,13 +111,17 @@ extension Application {
         method: HTTPMethod = .GET,
         headers: HTTPHeaders = .init(),
         data: C? = nil,
-        decodeTo type: T.Type
-        ) throws -> T where C: Content, T: Decodable {
+        decodeTo type: T.Type,
+        loggedInRequest: Bool = false,
+        loggedInUser: User? = nil
+    ) throws -> T where C: Content, T: Decodable {
         let response = try self.sendRequest(
             to: path,
             method: method,
             headers: headers,
-            body: data
+            body: data,
+            loggedInRequest: loggedInRequest,
+            loggedInUser: loggedInUser
         )
         return try response.content.decode(type).wait()
     }
@@ -95,15 +130,19 @@ extension Application {
         to path: String,
         method: HTTPMethod = .GET,
         headers: HTTPHeaders = .init(),
-        decodeTo type: T.Type
-        ) throws -> T where T: Decodable {
+        decodeTo type: T.Type,
+        loggedInRequest: Bool = false,
+        loggedInUser: User? = nil
+    ) throws -> T where T: Decodable {
         let emptyContent: EmptyContent? = nil
         return try self.getResponse(
             to: path,
             method: method,
             headers: headers,
             data: emptyContent,
-            decodeTo: type
+            decodeTo: type,
+            loggedInRequest: loggedInRequest,
+            loggedInUser: loggedInUser
         )
     }
 

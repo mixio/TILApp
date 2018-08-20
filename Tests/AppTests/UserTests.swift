@@ -10,6 +10,7 @@ import Foundation
 import Vapor
 import XCTest
 import FluentSQLite
+import Crypto 
 
 final class UserTests: XCTestCase {
 
@@ -40,23 +41,24 @@ final class UserTests: XCTestCase {
 
         let users = try app.getResponse(
             to: usersURI,
-            decodeTo: [User].self
+            decodeTo: [User.Public].self
         )
 
-        XCTAssertEqual(users.count, 2)
-        XCTAssertEqual(users[0].name, usersName)
-        XCTAssertEqual(users[0].username, usersUsername)
-        XCTAssertEqual(users[0].id, user.id)
+        XCTAssertEqual(users.count, 3)
+        XCTAssertEqual(users[1].name, usersName)
+        XCTAssertEqual(users[1].username, usersUsername)
+        XCTAssertEqual(users[1].id, user.id)
     }
 
     func testUserCanBeSavedWithTheAPI() throws {
-        let user = User(name: usersName, username: usersUsername)
+        let user = User(name: usersName, username: usersUsername, password: "password")
         let receivedUser = try app.getResponse(
             to: usersURI,
             method: .POST,
             headers: ["Content-Type": "application/json"],
             data: user,
-            decodeTo: User.self
+            decodeTo: User.Public.self,
+            loggedInRequest: true
         )
 
         XCTAssertEqual(receivedUser.name, usersName)
@@ -65,13 +67,13 @@ final class UserTests: XCTestCase {
 
         let users = try app.getResponse(
             to: usersURI,
-            decodeTo: [User].self
+            decodeTo: [User.Public].self
         )
 
-        XCTAssertEqual(users.count, 1)
-        XCTAssertEqual(users[0].name, usersName)
-        XCTAssertEqual(users[0].username, usersUsername)
-        XCTAssertEqual(users[0].id, receivedUser.id)
+        XCTAssertEqual(users.count, 2)
+        XCTAssertEqual(users[1].name, usersName)
+        XCTAssertEqual(users[1].username, usersUsername)
+        XCTAssertEqual(users[1].id, receivedUser.id)
 
     }
 
@@ -83,7 +85,7 @@ final class UserTests: XCTestCase {
         )
         let receivedUser = try app.getResponse(
             to: "\(usersURI)\(user.id!)",
-            decodeTo: User.self
+            decodeTo: User.Public.self
         )
 
         XCTAssertEqual(receivedUser.name, usersName)
