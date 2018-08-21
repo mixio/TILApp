@@ -21,6 +21,9 @@
         <h2>There aren't any categories yet!</h2>
     }
     <form method="post" action="/acronyms/#(acronym.id)/delete">
+     #if(csrfToken) {
+        <input type="hidden" name="csrfToken" value="#(csrfToken)">
+    }
         <a class="btn btn-primary" href="/acronyms/#(acronym.id)/edit" role="button">Edit</a>&nbsp;
         <input class="btn btn-danger" type="submit" value="Delete" />
     </form>

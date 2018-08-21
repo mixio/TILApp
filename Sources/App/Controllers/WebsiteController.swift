@@ -92,9 +92,11 @@ struct WebsiteController: RouteCollection {
                 let title: String
                 let acronyms: [Acronym]?
                 let userLoggedIn: Bool
+                let showCookieMessage: Bool
             }
             let userLoggedIn = try req.isAuthenticated(User.self)
-            let context = Context(title: "Homepage", acronyms: acronyms, userLoggedIn: userLoggedIn)
+            let showCookieMessage = req.http.cookies["cookies-accepted"] == nil
+            let context = Context(title: "Homepage", acronyms: acronyms, userLoggedIn: userLoggedIn, showCookieMessage: showCookieMessage)
             return try req.view().render("acronyms", context)
         }
     }
@@ -107,9 +109,18 @@ struct WebsiteController: RouteCollection {
                     let acronym: Acronym
                     let user: User
                     let categories:Future<[Category]>
+                    let csrfToken: String
                 }
                 let categories = try acronym.categories.query(on: req).all()
-                let context = Context(title: acronym.short, acronym: acronym, user: user, categories: categories)
+                let csrfToken = try CryptoRandom().generateData(count: 16).base64URLEncodedString()
+                try req.session()["CSRF_TOKEN"] = csrfToken
+                let context = Context(
+                    title: acronym.short,
+                    acronym: acronym,
+                    user: user,
+                    categories: categories,
+                    csrfToken: csrfToken
+                )
                 return try req.view().render("acronym", context)
             }
         }
@@ -119,8 +130,11 @@ struct WebsiteController: RouteCollection {
         struct Context: Encodable {
             let title = "Create An Acronym"
             let usesSelect = true
+            let csrfToken : String
         }
-        let context = Context()
+        let csrfToken = try CryptoRandom().generateData(count: 16).base64URLEncodedString()
+        try req.session()["CSRF_TOKEN"] = csrfToken
+        let context = Context(csrfToken: csrfToken)
         return try req.view().render("acronymForm", context)
     }
 
@@ -128,9 +142,15 @@ struct WebsiteController: RouteCollection {
         let short: String
         let long: String
         let categories: [String]?
+        let csrfToken: String
     }
 
     func postCreateAcronymFormHandler(_ req: Request, data: CreateAcronymData) throws -> Future<Response> {
+        let expectedToken = try req.session()["CSRF_TOKEN"]
+        try req.session()["CSRF_TOKEN"] = nil
+        guard expectedToken == data.csrfToken else {
+            throw Abort(.badRequest)
+        }
         let user = try req.requireAuthenticated(User.self)
         let acronym = Acronym(short: data.short, long: data.long, userID: try user.requireID())
         return acronym.save(on: req).flatMap(to: Response.self) { acronym in
@@ -153,10 +173,13 @@ struct WebsiteController: RouteCollection {
             let categories: Future<[Category]>
             let editing = true
             let usesSelect = true
+            let csrfToken: String
         }
         return try req.parameters.next(Acronym.self).flatMap(to: View.self) { acronym in
             let categories = try acronym.categories.query(on: req).all()
-            let context = Context(acronym: acronym, categories: categories)
+            let csrfToken = try CryptoRandom().generateData(count: 16).base64URLEncodedString()
+            try req.session()["CSRF_TOKEN"] = csrfToken
+            let context = Context(acronym: acronym, categories: categories, csrfToken: csrfToken)
             return try req.view().render("acronymForm", context)
         }
     }
@@ -167,6 +190,11 @@ struct WebsiteController: RouteCollection {
             req.parameters.next(Acronym.self),
             req.content.decode(CreateAcronymData.self)
         ) { acronym, data in
+            let expectedToken = try req.session()["CSRF_TOKEN"]
+            try req.session()["CSRF_TOKEN"] = nil
+            guard expectedToken == data.csrfToken else {
+                throw Abort(.badRequest)
+            }
             let user = try req.requireAuthenticated(User.self)
             acronym.short = data.short
             acronym.long = data.long
