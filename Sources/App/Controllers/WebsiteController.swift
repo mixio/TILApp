@@ -16,7 +16,6 @@ struct WebsiteController: RouteCollection {
 
         let authRoutes = router.grouped(User.authSessionsMiddleware())
 
-        authRoutes.get("login", use: loginHandler)
         authRoutes.get(use: getAcronymsHandler)
         authRoutes.get("acronyms", Acronym.parameter, use: getAcronymHandler)
         authRoutes.get("users", use: getUsersHandler)
@@ -24,8 +23,12 @@ struct WebsiteController: RouteCollection {
         authRoutes.get("categories", use: getCategoriesHandler)
         authRoutes.get("categories", Category.parameter, use: getCategoryHandler)
 
-        authRoutes.post(LoginPostData.self, at: "login", use: postLoginHandler)
+        authRoutes.get("login", use: getLoginFormHandler)
+        authRoutes.post(LoginPostData.self, at: "login", use: postLoginFormHandler)
         authRoutes.post("logout", use: logoutHandler)
+
+        authRoutes.get("register", use: getRegisterFormHandler)
+        authRoutes.post(RegisterData.self, at: "register", use: postRegisterFormHandler)
 
         let protectedRoutes = authRoutes.grouped(RedirectMiddleware<User>(path: "/login"))
 
@@ -41,7 +44,7 @@ struct WebsiteController: RouteCollection {
 
     // MARK: - login / logout
 
-    func loginHandler(_ req: Request) throws -> Future<View> {
+    func getLoginFormHandler(_ req: Request) throws -> Future<View> {
         struct Context: Encodable {
             let title = "Log in"
             let loginError: Bool
@@ -63,7 +66,7 @@ struct WebsiteController: RouteCollection {
         let password: String
     }
 
-    func postLoginHandler(_ req: Request, userData: LoginPostData) throws -> Future<Response> {
+    func postLoginFormHandler(_ req: Request, userData: LoginPostData) throws -> Future<Response> {
         return User.authenticate(
             username: userData.username,
             password: userData.password,
@@ -281,5 +284,59 @@ struct WebsiteController: RouteCollection {
         }
     }
 
-}
+    // MARK: - Register
 
+    func getRegisterFormHandler(_ req: Request) throws -> Future<View> {
+        struct Context: Encodable {
+            let title = "Register"
+            let message: String?
+            init(message: String?) {
+                self.message = message
+            }
+        }
+        let context = Context(message: req.query[String.self, at: "message"]    )
+        return try req.view().render("register", context)
+    }
+
+    struct RegisterData: Content, Validatable, Reflectable {
+        let name: String
+        let username: String
+        let password: String
+        let confirmPassword: String
+
+        static func validations() throws -> Validations<RegisterData> {
+            var validations = Validations(RegisterData.self)
+            try validations.add(\.name, .ascii)
+            try validations.add(\.username, .alphanumeric && .count(3...))
+            try validations.add(\.password, .count(8...))
+            validations.add("password match") { model in
+                guard model.password == model.confirmPassword else {
+                    throw BasicValidationError("passwords don't match")
+                }
+            }
+            return validations
+        }
+    }
+
+    func postRegisterFormHandler(_ req: Request, data: RegisterData) throws -> Future<Response> {
+        do {
+            try data.validate()
+        } catch (let error) {
+            let redirect: String
+            if let error = error as? ValidationError,
+                let message = error.reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                redirect = "/register?message=\(message)"
+            } else {
+                redirect = "/register?message=Unknown+error"
+            }
+            return req.future(req.redirect(to: redirect))
+        }
+        let password = try BCrypt.hash(data.password)
+        let user = User(name: data.name, username: data.username, password: password)
+        return user.save(on: req).map(to: Response.self) { user in
+            try req.authenticateSession(user)
+            return req.redirect(to: "/")
+        }
+    }
+
+}

@@ -50,6 +50,10 @@ id="navbarSupportedContent"
                 <form class="form-inline" action="/logout" method="POST">
                     <input class="nav-link btn btn-link" type="submit" value="Log out">
                 </form>
+            } else {
+                <form class="form-inline" action="/register" method="GET">
+                    <input class="nav-link btn btn-link" type="submit" value="Register"  #if(title == "Register"){disabled=disabled}>
+                </form>
             }
             </div>
         </nav>
