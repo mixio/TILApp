@@ -39,9 +39,10 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(commandConfig)
 
     /// Register middleware
-    var middlewares = MiddlewareConfig()    // Create _empty_ middleware config
-    middlewares.use(FileMiddleware.self)    // Serves files from `Public/` directory
-    middlewares.use(ErrorMiddleware.self)   // Catches errors and converts to HTTP response
+    var middlewares = MiddlewareConfig()
+    middlewares.use(FileMiddleware.self)        // Serves files from `Public/` directory
+    middlewares.use(ErrorMiddleware.self)       // Catches errors and converts to HTTP response
+    middlewares.use(SessionsMiddleware.self)    // Manages sessions.
     services.register(middlewares)
 
     let dirConfig = DirectoryConfig.detect()
@@ -158,4 +159,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
     // Authentication.
     try services.register(AuthenticationProvider())
+
+    // KeyedCache.
+    config.prefer(MemoryKeyedCache.self, for: KeyedCache.self)
 }
