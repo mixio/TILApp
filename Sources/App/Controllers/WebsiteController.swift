@@ -302,6 +302,7 @@ struct WebsiteController: RouteCollection {
         let name: String
         let username: String
         let password: String
+        let twitterURL: String?
         let confirmPassword: String
 
         static func validations() throws -> Validations<RegisterData> {
@@ -332,7 +333,11 @@ struct WebsiteController: RouteCollection {
             return req.future(req.redirect(to: redirect))
         }
         let password = try BCrypt.hash(data.password)
-        let user = User(name: data.name, username: data.username, password: password)
+        var twitterURL: String?
+        if let twitter = data.twitterURL, !twitter.isEmpty {
+            twitterURL = twitter
+        }
+        let user = User(name: data.name, username: data.username, password: password, twitterURL: twitterURL)
         return user.save(on: req).map(to: Response.self) { user in
             try req.authenticateSession(user)
             return req.redirect(to: "/")

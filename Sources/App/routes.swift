@@ -1,6 +1,7 @@
 import Vapor
 import Fluent
 import FluentSQL
+import FluentSQLite
 
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
@@ -23,14 +24,17 @@ public func routes(_ router: Router) throws {
     let websiteController = WebsiteController()
     try router.register(collection: websiteController)
 
-    router.get("sqlite", "version") { req in
-        return req.withPooledConnection(to: .sqlite) { conn in
-            return conn.select()
-                .column(function: "sqlite_version", as: "version")
-                .all(decoding: SQLiteVersion.self)
-            }.map { rows in
-                return rows[0].version
-        }
-    }
+    let imperialController = ImperialController()
+    try router.register(collection: imperialController)
+    
+//    router.get("sqlite", "version") { req in
+//        return req.withPooledConnection(to: .sqlite) { conn in
+//            return conn.select()
+//                .column(function: "sqlite_version", as: "version")
+//                .all(decoding: SQLiteVersion.self)
+//            }.map { rows in
+//                return rows[0].version
+//        }
+//    }
 
 }

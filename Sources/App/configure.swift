@@ -141,7 +141,14 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         migrations.add(model: Post.self, database: .sqlite)
         migrations.add(model: PostResponse.self, database: .sqlite)
         migrations.add(model: Token.self, database: .sqlite)
-        migrations.add(migration: AdminUser.self, database: .sqlite)
+        switch env {
+        case .development, .testing:
+            migrations.add(migration: AdminUser.self, database: .sqlite)
+        default:
+            break
+        }
+        migrations.add(migration: AddTwitterURLToUser.self, database: .sqlite)
+        //migrations.add(migration: MakeCategoriesUnique.self, database: .sqlite)
     case .mysql:
         // migration.add(model: User.self, database: .mysql)
         // migrations.add(model: Acronym.self, database: .mysql)
