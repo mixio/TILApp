@@ -169,4 +169,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
     // KeyedCache.
     config.prefer(MemoryKeyedCache.self, for: KeyedCache.self)
+
+    // Services
+    services.register(JJService.self)
+
 }

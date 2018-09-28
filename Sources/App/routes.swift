@@ -26,6 +26,10 @@ public func routes(_ router: Router) throws {
 
     let imperialController = ImperialController()
     try router.register(collection: imperialController)
+
+    let testServiceController = TestServiceController()
+    try router.register(collection: testServiceController)
+
     
 //    router.get("sqlite", "version") { req in
 //        return req.withPooledConnection(to: .sqlite) { conn in
