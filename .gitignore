@@ -2,5 +2,6 @@ Packages
 .build
 xcuserdata
 *.xcodeproj
+*.xcconfig
 DerivedData/
 .DS_Store

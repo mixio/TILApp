@@ -17,7 +17,6 @@ let package = Package(
         .package(url: "https://github.com/vapor/auth.git", from: "2.0.1"),
 
         .package(url: "https://github.com/vapor-community/Imperial.git", from: "0.7.1")
-
     ],
     targets: [
         .target(name: "App", dependencies: ["FluentSQLite", "Vapor", "Leaf", "JJTools", "Authentication", "Imperial"]),
